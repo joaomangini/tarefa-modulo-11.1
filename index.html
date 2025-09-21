@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>App Registro de Usuários</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f4f6f8;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: auto;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+
+        .form-group {
+            margin-bottom: 10px;
+        }
+
+        label {
+            display: block;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        input {
+            width: 100%;
+            padding: 8px;
+            margin-bottom: 5px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+
+        button {
+            padding: 8px 12px;
+            margin: 4px 2px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .deleteBtn { background-color: #e74c3c; color: white; }
+        .editBtn { background-color: #3498db; color: white; }
+        #clearBtn { background-color: #7f8c8d; color: white; }
+        #listBtn { background-color: #2ecc71; color: white; }
+        #exportBtn { background-color: #f39c12; color: white; }
+        #sortNameBtn { background-color: #9b59b6; color: white; }
+        #sortAgeBtn { background-color: #16a085; color: white; }
+
+        .userItem {
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            padding: 10px;
+            margin-bottom: 8px;
+            background: #fafafa;
+        }
+
+        .hidden { display: none; }
+
+        #search {
+            width: 100%;
+            padding: 8px;
+            margin: 10px 0;
+            border: 1px solid #aaa;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>App Registro de Usuários</h1>
+        <form id="userForm">
+            <div class="form-group">
+                <label for="name">Nome:</label>
+                <input type="text" id="name" required>
+            </div>
+            <div class="form-group">
+                <label for="age">Idade:</label>
+                <input type="number" id="age" required>
+            </div>
+            <div class="form-group">
+                <label for="course">Curso:</label>
+                <input type="text" id="course" required>
+            </div>
+            <button type="submit">Adicionar Usuário</button>
+        </form>
+
+        <!-- Barra de ações -->
+        <input type="text" id="search" placeholder="Buscar usuário...">
+        <button id="listBtn">Listar Usuários</button>
+        <button id="clearBtn">Limpar Lista</button>
+        <button id="sortNameBtn">Ordenar por Nome</button>
+        <button id="sortAgeBtn">Ordenar por Idade</button>
+        <button id="exportBtn">Exportar JSON</button>
+
+        <div id="usersList" class="hidden"></div>
+    </div>
+
+    <script>
+        //elementos
+        const form = document.getElementById('userForm');
+        const listBtn = document.getElementById('listBtn');
+        const clearBtn = document.getElementById('clearBtn');
+        const userList = document.getElementById('usersList');
+        const searchInput = document.getElementById('search');
+        const exportBtn = document.getElementById('exportBtn');
+        const sortNameBtn = document.getElementById('sortNameBtn');
+        const sortAgeBtn = document.getElementById('sortAgeBtn');
+
+        //Array de usuários
+        let users = [];
+        let editIndex = null; // controle de edição
+
+        //Adicionar ou atualizar usuários
+        function addUser(name, age, course) {
+            if (editIndex === null) {
+                users.push({ name, age, course });
+            } else {
+                users[editIndex] = { name, age, course };
+                editIndex = null;
+            }
+        }
+
+        //display de usuários
+        function displayUsers(list = users) {
+            userList.innerHTML = '';
+            list.forEach((user, index) => {
+                let userHTML = `
+                    <div class="userItem">
+                        <h3>${user.name}</h3>
+                        <p>Idade: ${user.age}</p>
+                        <p>Curso: ${user.course}</p>
+                        <button class="editBtn" onclick="editUser(${index})">Editar</button>
+                        <button class="deleteBtn" onclick="deleteUser(${index})">Excluir</button>
+                    </div>
+                `;
+                userList.insertAdjacentHTML('beforeend', userHTML);
+            });
+        }
+
+        // Função delete
+        function deleteUser(index) {
+            if (confirm(`Tem certeza que deseja excluir ${users[index].name}?`)) {
+                users.splice(index, 1);
+                displayUsers();
+            }
+        }
+
+        // Função editar
+        function editUser(index) {
+            const user = users[index];
+            document.getElementById('name').value = user.name;
+            document.getElementById('age').value = user.age;
+            document.getElementById('course').value = user.course;
+            editIndex = index;
+        }
+
+        //Função lista de usuário
+        function toggleUsersList() {
+            userList.classList.toggle('hidden');
+            if (!userList.classList.contains('hidden')) {
+                displayUsers();
+            }
+        }
+
+        //Função limpar lista
+        function clearUsers() {
+            if (confirm("Tem certeza que deseja limpar toda a lista?")) {
+                users = [];
+                displayUsers();
+            }
+        }
+
+        // Ordenações
+        function sortUsersByName() {
+            users.sort((a, b) => a.name.localeCompare(b.name));
+            displayUsers();
+        }
+
+        function sortUsersByAge() {
+            users.sort((a, b) => a.age - b.age);
+            displayUsers();
+        }
+
+        // Buscar usuário
+        searchInput.addEventListener('input', (e) => {
+            const searchTerm = e.target.value.toLowerCase();
+            const filteredUsers = users.filter(user => 
+                user.name.toLowerCase().includes(searchTerm) ||
+                user.course.toLowerCase().includes(searchTerm)
+            );
+            displayUsers(filteredUsers);
+        });
+
+        // Exportar JSON
+        function exportUsers() {
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(users));
+            const downloadAnchor = document.createElement('a');
+            downloadAnchor.setAttribute("href", dataStr);
+            downloadAnchor.setAttribute("download", "usuarios.json");
+            downloadAnchor.click();
+        }
+
+        //Formulário para inserir usuário
+        form.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const name = document.getElementById('name').value;
+            const age = document.getElementById('age').value;
+            const course = document.getElementById('course').value;
+            addUser(name, age, course);
+            displayUsers();
+            form.reset();
+        });
+
+        //Botões
+        listBtn.addEventListener('click', toggleUsersList);
+        clearBtn.addEventListener('click', clearUsers);
+        exportBtn.addEventListener('click', exportUsers);
+        sortNameBtn.addEventListener('click', sortUsersByName);
+        sortAgeBtn.addEventListener('click', sortUsersByAge);
+
+        // Torna as funções acessíveis ao HTML
+        window.deleteUser = deleteUser;
+        window.editUser = editUser;
+    </script>
+</body>
+</html>
